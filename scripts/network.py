@@ -9,7 +9,7 @@ class NeuralNetwork:
         self.output_layer = output_layer
         # during the feedforward, we save both the nodes and the inputs (the zs') before sigmoid function
         # for backpropagation purposes
-        self.nodes = []
+        self.activations = []
         self.zs = []
         # initializations of weights and biases
         self.weights = self.initWeights()
@@ -37,6 +37,9 @@ class NeuralNetwork:
         bv_o = np.random.rand(self.output_layer)
         biases.append(bv_o)
         return biases
+    @staticmethod
+    def cost_prime(outputs, targets):
+        return 2*(outputs - targets)
 
     @staticmethod
     def activationFunction(x):
@@ -47,18 +50,18 @@ class NeuralNetwork:
         return np.exp(x)/(np.exp(x)+1) - np.exp(2*x)/np.power((np.exp(x)+1), 2)
 
     def feedForward(self, input):
-        self.nodes = []
-        self.zs = []  # empty the node and bias values
+        self.activations = []
+        self.zs = []  # empty the node and bias values from previous feedforward
         if len(input) == self.input_layer:
             a = np.array(input)
-            self.nodes.append(a)
+            self.activations.append(a)
             bias_index = 0
             for w in self.weights:
                 w_a = np.matmul(w, a)  # W*A^(L-1)  ^:upper index, not power
                 z = np.subtract(w_a, self.biases[bias_index])  # W*A^(L-1)-B^L
                 self.zs.append(z)
                 a = np.array(list(map(self.activationFunction, z)))  # sigmoid(Z)
-                self.nodes.append(a)
+                self.activations.append(a)
                 bias_index += 1
             # return output
             return a
@@ -67,19 +70,21 @@ class NeuralNetwork:
             return None
 
     def backpropagate(self, outputs, targets, eta):  # todo only calculate do not adjust, instead return deltas
-        errors = 2 * (np.subtract(outputs, targets))  # Gc/Ga
+        errors = self.cost_prime(outputs, targets)  # Gc/Ga
         for i in range(0, len(self.weights) - 1):
             c_l = len(self.hidden_layers) - i  # index for current layer (indexing starts at zero)
             # calculate gradients Ga/Gz*Gc/Ga
             gradients = np.array(list(map(self.s_prime, self.zs[c_l])))
             gradients = np.multiply(gradients, errors)
             # calculate bias deltas and adjust biases
-            b_deltas = np.multiply(gradients, self.biases[c_l])
-            self.biases[c_l] = np.add(self.biases[c_l], eta*b_deltas)
+            b_deltas = gradients
+            self.biases[c_l] = np.subtract(self.biases[c_l], eta*b_deltas)
             # calculate weight deltas (i.e the amount we have to change the weights)
-            w_deltas = np.matmul(gradients, np.transpose(self.nodes[c_l + 1]))
+            # this might look stupid, but its basically a dot product with activations transposed.
+            # numpy just made it a misery
+            w_deltas = np.dot(gradients.reshape(-1, 1), self.activations[c_l].reshape((1, -1)))
             # adjust weights
-            self.weights[c_l] = np.add(self.weights[c_l], eta*w_deltas)
+            self.weights[c_l] = np.subtract(self.weights[c_l], eta*w_deltas)
             # and lets calculate the errors for the next layer
             errors = np.matmul(np.transpose(self.weights[c_l]), gradients)
 
