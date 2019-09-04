@@ -47,6 +47,8 @@ class NeuralNetwork:
         return np.exp(x)/(np.exp(x)+1) - np.exp(2*x)/np.power((np.exp(x)+1), 2)
 
     def feedForward(self, input):
+        self.nodes = []
+        self.zs = []  # empty the node and bias values
         if len(input) == self.input_layer:
             a = np.array(input)
             self.nodes.append(a)
@@ -64,36 +66,43 @@ class NeuralNetwork:
             print('wrong input size')
             return None
 
-    def backpropagate(self, output_errors):
-        errors = output_errors
+    def backpropagate(self, outputs, targets, eta):  # todo only calculate do not adjust, instead return deltas
+        errors = 2 * (np.subtract(outputs, targets))  # Gc/Ga
         for i in range(0, len(self.weights) - 1):
             c_l = len(self.hidden_layers) - i  # index for current layer (indexing starts at zero)
+            # calculate gradients Ga/Gz*Gc/Ga
             gradients = np.array(list(map(self.s_prime, self.zs[c_l])))
             gradients = np.multiply(gradients, errors)
-            # adjust biases
+            # calculate bias deltas and adjust biases
             b_deltas = np.multiply(gradients, self.biases[c_l])
-            self.biases[c_l] = np.subtract(self.biases[c_l], b_deltas)
+            self.biases[c_l] = np.add(self.biases[c_l], eta*b_deltas)
             # calculate weight deltas (i.e the amount we have to change the weights)
-            w_deltas = np.matmul(gradients, np.transpose(self.nodes[c_l+1]))
-            #  adjust weights
-            self.weights[c_l] = np.subtract(self.weights[c_l], w_deltas)
+            w_deltas = np.matmul(gradients, np.transpose(self.nodes[c_l + 1]))
+            # adjust weights
+            self.weights[c_l] = np.add(self.weights[c_l], eta*w_deltas)
             # and lets calculate the errors for the next layer
             errors = np.matmul(np.transpose(self.weights[c_l]), gradients)
 
-    def train(self, inputs, targets):
-        print("training begins")
+    def train(self, inputs, targets, eta):
         for i in range(1, 100):
             outputs = self.feedForward(inputs)
-            errors = 2 * (np.subtract(targets, outputs))
-            print(outputs)
-            self.backpropagate(errors)
-        print("training ends")
+            self.backpropagate(outputs, targets, eta)
 
 
 if __name__ == '__main__':
-    nn = NeuralNetwork(4, [3, 3], 2)
-    # todo messes up when calling feedforward before training
-    nn.train([1, 2, 3, 4], [1, 0])
+
+    """output = nn.feedForward([1, 2, 3, 4])
+    print("output with untrained network: ")
+    print(output)"""
+
+    error_count = 0
+    for i in range(1, 100):
+        nn = NeuralNetwork(4, [3, 3, 3], 2)
+        nn.train([1, 2, 3, 4], [1, 0], 0.7)
+        trained_output = nn.feedForward([1, 2, 3, 4])
+        if trained_output[0] < trained_output[1]:
+            print("error")
+            error_count += 1
     trained_output = nn.feedForward([1, 2, 3, 4])
-    print("output with trained network: ")
     print(trained_output)
+    print("mistakes made (%): " + str(error_count / 100))
