@@ -12,29 +12,30 @@ class NeuralNetwork:
         self.activations = []
         self.zs = []
         # initializations of weights and biases
+        np.random.seed(3)
         self.weights = self.initWeights()
         self.biases = self.initBiases()
 
     def initWeights(self):
         weights = []
         # first lets initialize the weights from input to first hidden layer
-        w_ih = np.random.rand(self.hidden_layers[0], self.input_layer)
+        w_ih = np.random.randn(self.hidden_layers[0], self.input_layer)
         weights.append(w_ih)
         # then go over the hidden layers weights
         for i in range(1, len(self.hidden_layers)):
-            w_hh = np.random.rand(self.hidden_layers[i], self.hidden_layers[i-1])
+            w_hh = np.random.randn(self.hidden_layers[i], self.hidden_layers[i-1])
             weights.append(w_hh)
         # and at last from last hidden layer to output
-        w_ho = np.random.rand(self.output_layer, self.hidden_layers[len(self.hidden_layers)-1])
+        w_ho = np.random.randn(self.output_layer, self.hidden_layers[len(self.hidden_layers)-1])
         weights.append(w_ho)
         return weights
 
     def initBiases(self):
         biases = []
         for i in range(0, len(self.hidden_layers)):
-            bv = np.random.rand(self.hidden_layers[i])  # generates one bias-vector
+            bv = np.random.randn(self.hidden_layers[i])  # generates one bias-vector
             biases.append(bv)
-        bv_o = np.random.rand(self.output_layer)
+        bv_o = np.random.randn(self.output_layer)
         biases.append(bv_o)
         return biases
     @staticmethod
@@ -95,19 +96,10 @@ class NeuralNetwork:
 
 
 if __name__ == '__main__':
-
-    """output = nn.feedForward([1, 2, 3, 4])
-    print("output with untrained network: ")
-    print(output)"""
-
-    error_count = 0
+    nn = NeuralNetwork(4, [3, 3, 3], 2)
+    inputs = [1, 2, 3, 4]
+    untrained_output = nn.feedForward(inputs)
+    print(untrained_output)
     for i in range(1, 100):
-        nn = NeuralNetwork(4, [3, 3, 3], 2)
-        nn.train([1, 2, 3, 4], [1, 0], 0.7)
-        trained_output = nn.feedForward([1, 2, 3, 4])
-        if trained_output[0] < trained_output[1]:
-            print("error")
-            error_count += 1
-    trained_output = nn.feedForward([1, 2, 3, 4])
-    print(trained_output)
-    print("mistakes made (%): " + str(error_count / 100))
+        nn.train(inputs, [1, 0], 3)
+    print(nn.feedForward(inputs))
