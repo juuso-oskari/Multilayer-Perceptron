@@ -1,4 +1,5 @@
 import numpy as np
+import pickle
 
 
 class NeuralNetwork:
@@ -16,8 +17,12 @@ class NeuralNetwork:
         self.zs = []
 
     @staticmethod
+    def cost_function(outputs, targets):
+        return np.power(outputs - targets, 2)
+
+    @staticmethod
     def cost_prime(outputs, targets):
-        return 2*(outputs - targets)  # partial del of cost_function = (outputs - targets)^2 with respect to the output
+        return 2 * (outputs - targets)  # derivative of cost function with the output
 
     @staticmethod
     def activation_function(x):
@@ -42,7 +47,8 @@ class NeuralNetwork:
             # return output
             return a
         else:
-            raise Exception('input size should be {}, input size was {}'.format(self.layer_sizes[0], len(input)))
+            raise Exception('input-vector size should be {}, input-vector size was {}'.format(self.layer_sizes[0],
+                                                                                              len(input)))
 
     def backpropagate(self, outputs, targets):
         error_gradients = self.cost_prime(outputs, targets)  # delC / delA
@@ -60,8 +66,12 @@ class NeuralNetwork:
         return nabla_b, nabla_w
 
     def train(self, inputs, targets):
-        outputs = self.feedforward(inputs)
-        return self.backpropagate(outputs, targets)
+        if len(targets) == self.layer_sizes[-1]:
+            outputs = self.feedforward(inputs)
+            return self.backpropagate(outputs, targets)
+        else:
+            raise Exception('target-vector size: {} did not match the networks output-vector size: {}'
+                            .format(len(targets), self.layer_sizes[-1]))
 
     def train_databatch(self, inputs_matrix, targets_matrix, eta):
         nabla_matrix = [self.train(inputs, targets) for inputs, targets in zip(inputs_matrix, targets_matrix)]
@@ -70,16 +80,45 @@ class NeuralNetwork:
         self.biases = [b - eta * d_b for b, d_b in zip(self.biases, delta_b)]
         self.weights = [w - eta * d_w for w, d_w in zip(self.weights, delta_w)]
 
+    def validate(self, validation_data):
+        test_amount = len(validation_data)
+        accuracy = 1.0
+        for test in validation_data:
+            for input, target_output in test:
+                output = self.feedforward(input)
+                if output.index(max(output)) != target_output.index(max(target_output)):
+                    accuracy -= 1.0 / test_amount
+        return accuracy
+
 
 if __name__ == '__main__':
-    nn = NeuralNetwork([3, 3, 3, 2])
-    inputs_matrix = [[1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 0]]
-    targets_matrix = [[1, 1], [1, 1], [0, 1], [0, 0]]
-    for i in range(1, 10000):
-        nn.train_databatch(inputs_matrix, targets_matrix, 3)
-    print("{} compared to {}".format(nn.feedforward([1, 0, 0]), [1, 1]))
-    print("{} compared to {}".format(nn.feedforward([0, 1, 0]), [1, 1]))
-    print("{} compared to {}".format(nn.feedforward([1, 1, 0]), [0, 1]))
-    print("{} compared to {}".format(nn.feedforward([0, 0, 0]), [0, 0]))
+    nn = NeuralNetwork([784, 18, 18, 10])
+    """loading the MNIST-dataset from pickle file MNISTData.pkl to a key-value dictionary data_dict"""
+    datapath = '../data/MNISTData/'
+    with open(datapath + 'MNISTData.pkl', 'rb') as fp:
+        data_dict = pickle.load(fp)
+    lr = np.arange(10)
+    # transform labels into one hot representation, "1" becomes [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    train_labels = (lr == data_dict['train_labels']).astype(np.float)
+    test_labels = (lr == data_dict["test_labels"]).astype(np.float)
+    # we don't want zeroes and ones in the labels neither:
+    train_labels[train_labels == 0] = 0.01
+    train_labels[train_labels == 1] = 0.99
+    test_labels[test_labels == 0] = 0.01
+    test_labels[test_labels == 1] = 0.99
 
-
+    train_data = zip(data_dict['train_images'], train_labels)
+    test_data = zip(data_dict["test_images"], test_labels)
+    """shuffle the data for the batch to represent the whole data better"""
+    np.random.shuffle(train_data)
+    sample_amount, i_h, i_w = data_dict["train_images"].shape
+    batch_size = 100
+    continue_training = True
+    while continue_training:
+        for batch in np.split(np.array(train_data), sample_amount / batch_size, axis=0):
+            for i_m, t_m in batch:
+                nn.train_databatch(i_m.reshape((1, -1)), t_m, 3)
+        accuracy = nn.validate(np.array(test_data))
+        print(accuracy)
+        if accuracy > 0.9:
+            continue_training = False
