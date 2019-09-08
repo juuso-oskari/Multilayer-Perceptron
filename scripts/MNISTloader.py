@@ -1,5 +1,6 @@
-# IMPORTS
 import os, urllib.request, gzip, shutil, codecs, numpy, pickle
+
+
 if __name__ == '__main__':
     # PROVIDE YOUR DOWNLOAD DIRECTORY HERE
     datapath = '../data/MNISTData/'
@@ -77,6 +78,3 @@ if __name__ == '__main__':
     with open(datapath+'MNISTData.pkl', 'wb') as fp:
         pickle.dump(data_dict, fp)
 
-    """ LOADING THE DICTIONARY FROM A PICKLE
-    with open(datapath+'MNISTData.pkl', 'rb') as fp:
-        new_dict = pickle.load(fp)"""
