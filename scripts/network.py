@@ -30,6 +30,14 @@ class NeuralNetwork:
 
     @staticmethod
     def activation_prime(x):
+        """def der(i):
+            if i > 0.0:
+                return 1.0
+            else:
+                return 0.0
+
+        return np.array(list(map(der, x)))
+    #"""
         return np.exp(x)/(np.exp(x)+1) - np.exp(2*x)/np.power((np.exp(x)+1), 2)  # derivative of sigmoid
 
     def feedforward(self, input):

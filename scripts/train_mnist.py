@@ -23,8 +23,8 @@ def one_hot_encode(label_number):
     return lr
 
 
-if __name__ == '__main__':
-    nn = NeuralNetwork([784, 18, 18, 10])
+def train_mnist(network: NeuralNetwork, treshold):
+    nn = network
     """loading the MNIST-dataset from pickle file MNISTData.pkl to a key-value dictionary data_dict"""
     datapath = '../data/MNISTData/'
     with open(datapath + 'MNISTData.pkl', 'rb') as fp:
@@ -54,8 +54,13 @@ if __name__ == '__main__':
             nn.train_databatch(batch, 3.0)
         accuracy = nn.validate(np.array(test_data))
         print(accuracy)
-        if accuracy > 0.94:
+        if accuracy > treshold:
             continue_training = False
     """saving the trained network with filename network_<<achieved accuracy>>.pkl"""
-    with open('../trained_networks/'+'network_'+str(accuracy)+'.pkl', 'wb') as fp:
+    with open('../trained_networks/'+'network_'+str(treshold)+'.pkl', 'wb') as fp:
         pickle.dump(nn, fp)
+
+
+if __name__ == '__main__':
+    test_network = NeuralNetwork([784, 50, 50, 10])
+    train_mnist(test_network, 0.94)
