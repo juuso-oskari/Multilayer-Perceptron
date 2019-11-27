@@ -48,19 +48,24 @@ def train_mnist(network: NeuralNetwork, treshold):
     sample_amount = train_data.shape[0]
     batch_size = 100
     continue_training = True
-    accuracy = 0
+    achieved_accuracy = 0
+    learning_continues_check = 0
     while continue_training:
         for batch in np.split(np.array(train_data), sample_amount / batch_size, axis=0):
             nn.train_databatch(batch, 3.0)
         accuracy = nn.validate(np.array(test_data))
         print(accuracy)
-        if accuracy > treshold:
+        if accuracy < achieved_accuracy:
+            learning_continues_check += 1
+        else:
+            learning_continues_check = 0
+        if accuracy > treshold or learning_continues_check > 4:
             continue_training = False
     """saving the trained network with filename network_<<achieved accuracy>>.pkl"""
-    with open('../trained_networks/'+'network_'+str(treshold)+'.pkl', 'wb') as fp:
+    with open('../trained_networks/'+'network_max_accuracy_'+str(treshold)+'.pkl', 'wb') as fp:
         pickle.dump(nn, fp)
 
 
 if __name__ == '__main__':
     test_network = NeuralNetwork([784, 50, 50, 10])
-    train_mnist(test_network, 0.94)
+    train_mnist(test_network, 0.98)
