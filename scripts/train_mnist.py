@@ -23,7 +23,7 @@ def one_hot_encode(label_number):
     return lr
 
 
-def train_mnist(network: NeuralNetwork, treshold):
+def train_mnist(network, treshold):
     nn = network
     """loading the MNIST-dataset from pickle file MNISTData.pkl to a key-value dictionary data_dict"""
     datapath = '../data/MNISTData/'
